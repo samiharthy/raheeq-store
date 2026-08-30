@@ -42,17 +42,25 @@
     background:rgba(11,9,6,0.92);
     backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line);
+    flex-wrap:nowrap;
   }
-  .navbar .brand{display:flex;align-items:center;gap:8px;}
+  .navbar .brand{display:flex;align-items:center;gap:8px;flex-shrink:0;}
   .navbar .brand img{height:30px;width:auto;}
-  .navbar .brand span{font-family:'Amiri',serif;font-size:17px;color:var(--gold-bright);}
-  .navlinks{display:flex;gap:4px;}
+  .navbar .brand span{font-family:'Amiri',serif;font-size:17px;color:var(--gold-bright);white-space:nowrap;}
+  .navlinks{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .navlinks::-webkit-scrollbar{display:none;}
   .navlinks button{
     background:transparent;border:none;color:var(--cream-dim);
     font-size:12.5px;padding:7px 9px;border-radius:8px;cursor:pointer;
+    white-space:nowrap;flex-shrink:0;
     transition:color .15s, background .15s;
   }
   .navlinks button:active, .navlinks button.active{color:var(--gold-bright);background:rgba(212,175,55,0.1);}
+
+  @media (max-width:400px){
+    .navbar .brand span{display:none;}
+    .navlinks button{padding:6px 6px;font-size:11px;}
+  }
 
   /* ---------- HERO ---------- */
   .hero{
@@ -220,8 +228,33 @@
   .product-card .prod-img{
     width:64px;height:64px;border-radius:14px;overflow:hidden;flex-shrink:0;
     border:1px solid var(--gold-dim);
+    cursor:pointer;
   }
   .product-card .prod-img img{width:100%;height:100%;object-fit:cover;}
+
+  /* ---------- IMAGE LIGHTBOX ---------- */
+  .lightbox-overlay{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(6,5,3,0.92);
+    display:flex;align-items:center;justify-content:center;
+    padding:30px;
+    opacity:0;pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .lightbox-overlay.open{opacity:1;pointer-events:auto;}
+  .lightbox-overlay img{
+    max-width:100%;max-height:80vh;border-radius:14px;
+    border:1px solid var(--gold-dim);
+    box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  }
+  .lightbox-close{
+    position:absolute;top:20px;left:20px;
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(20,17,16,0.9);border:1px solid var(--gold-dim);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .lightbox-close svg{width:18px;height:18px;}
 
   /* ---------- PRODUCT CARD (existing) ---------- */
   .product-card{
@@ -268,10 +301,30 @@
   .cart-empty{text-align:center;color:var(--cream-dim);font-size:13px;padding:10px 0 16px;}
   .cart-row{
     display:flex;justify-content:space-between;align-items:center;
-    font-size:13.5px;color:var(--cream-dim);padding:8px 0;border-bottom:1px dashed rgba(212,175,55,0.18);
+    font-size:13.5px;color:var(--cream-dim);
+    padding:9px 0;border-bottom:1px dashed rgba(212,175,55,0.18);
+    gap:8px;
   }
   .cart-row span.name{color:var(--cream);}
   .cart-row span.amt{color:var(--gold-bright);font-weight:700;}
+  .cart-row.item{flex-wrap:wrap;}
+  .cart-item-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:120px;}
+  .cart-item-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .cart-stepper{display:flex;align-items:center;gap:8px;}
+  .cart-stepper button{
+    width:26px;height:26px;border-radius:50%;
+    border:1px solid var(--gold-dim);background:transparent;color:var(--gold-bright);
+    font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .cart-stepper button:active{background:rgba(212,175,55,0.15);}
+  .cart-stepper span{min-width:14px;text-align:center;font-size:13.5px;color:var(--cream);font-weight:700;}
+  .cart-remove{
+    width:26px;height:26px;border-radius:50%;
+    border:1px solid rgba(224,138,122,0.4);background:transparent;color:#e08a7a;
+    font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .cart-remove:active{background:rgba(224,138,122,0.12);}
   .total-row{
     display:flex;justify-content:space-between;align-items:center;
     margin-top:10px;padding:14px 0;font-size:14px;color:var(--cream-dim);
@@ -287,9 +340,19 @@
     color:var(--cream);border-radius:10px;padding:13px 14px;font-size:15px;
     font-family:'Tajawal',sans-serif;outline:none;transition:border-color .2s;
   }
+  select{
+    width:100%;background:#0c0a08;border:1px solid rgba(212,175,55,0.28);
+    color:var(--cream);border-radius:10px;padding:13px 14px;font-size:15px;
+    font-family:'Tajawal',sans-serif;outline:none;transition:border-color .2s;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:left 14px center;background-size:16px;
+  }
+  select:disabled{opacity:0.5;cursor:not-allowed;}
+  select:focus{border-color:var(--gold-bright);}
   input::placeholder{color:#6b6255;}
   input:focus{border-color:var(--gold-bright);}
-  .field.error input{border-color:#c05a4a;}
+  .field.error input, .field.error select{border-color:#c05a4a;}
   .error-msg{display:none;color:#e08a7a;font-size:12px;margin-top:5px;}
   .field.error .error-msg{display:block;}
 
@@ -374,7 +437,7 @@
     <div class="section-inner">
       <h2 class="eyebrow display">عن العسل العُماني</h2>
       <p class="section-lead">
-        يشتهر عُمان بتراث عريق في تربية النحل، حيث تمنح الطبيعة المتنوّعة من الجبال إلى الصحراء
+        تشتهر سلطنة عُمان بتراث عريق في تربية النحل، حيث تمنح الطبيعة المتنوّعة من الجبال إلى الصحراء
         نحل العسل مصادر رحيق فريدة، فينتج عسلاً أصيلاً يختلف طعمه ولونه وقوامه باختلاف المنطقة والفصل ونوع الأزهار.
       </p>
 
@@ -397,9 +460,9 @@
         <div class="origin-scrim"></div>
         <div class="origin-content">
           <div class="eyebrow-sm">🏔️ مصدر العسل</div>
-          <h3 class="display">من جبال الشرقية الشمالية</h3>
+          <h3 class="display">من جبال شمال الشرقية</h3>
           <p>
-            يأتي عسل رحيق من قلب <strong style="color:var(--cream)">محافظة الشرقية الشمالية</strong>،
+            يأتي عسل رحيق من قلب <strong style="color:var(--cream)">محافظة شمال الشرقية</strong>،
             حيث تحتضن سلاسلها الجبلية الوعرة أشجار السدر والسمر البرية التي تنمو بعيدًا عن أي تدخل صناعي،
             على ارتفاعات تمنح الرحيق تركيزًا ونقاءً يصعب إيجاده في أي مكان آخر.
           </p>
@@ -443,6 +506,22 @@
           <label for="phone">رقم الهاتف</label>
           <input type="tel" id="phone" placeholder="9XXXXXXX" inputmode="numeric">
           <div class="error-msg">فضلاً أدخل رقم هاتف صحيح</div>
+        </div>
+
+        <div class="field" id="governorateField">
+          <label for="governorate">المحافظة</label>
+          <select id="governorate">
+            <option value="">اختر المحافظة</option>
+          </select>
+          <div class="error-msg">فضلاً اختر المحافظة</div>
+        </div>
+
+        <div class="field" id="wilayatField">
+          <label for="wilayat">الولاية</label>
+          <select id="wilayat" disabled>
+            <option value="">اختر المحافظة أولاً</option>
+          </select>
+          <div class="error-msg">فضلاً اختر الولاية</div>
         </div>
 
         <a href="#" id="ctaBtn" class="cta-btn disabled">إتمام الطلب عبر واتساب ❤️</a>
@@ -495,6 +574,13 @@
     </div>
   </section>
 
+  <div class="lightbox-overlay" id="lightbox">
+    <button type="button" class="lightbox-close" id="lightboxClose" aria-label="إغلاق">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#f0cd6a" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <img id="lightboxImg" src="" alt="صورة المنتج">
+  </div>
+
   <button type="button" class="back-to-top" id="backToTop" aria-label="العودة لأعلى">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="#211a0c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
@@ -519,6 +605,57 @@
 <script>
   const WHATSAPP_NUMBER = "96898251593";
   const DELIVERY_FEE = 2.000;
+
+  const OMAN_REGIONS = {
+    "مسقط": ["مسقط","مطرح","بوشر","السيب","العامرات","قريات"],
+    "ظفار": ["صلالة","طاقة","مرباط","ضلكوت","رخيوت","سدح","مقشن","ثمريت","شليم وجزر الحلانيات","محوت"],
+    "مسندم": ["خصب","دبا","بخا","مدحاء"],
+    "البريمي": ["البريمي","محضة","السنينة"],
+    "الداخلية": ["نزوى","بهلاء","منح","أدم","الحمراء","سمائل","بدبد"],
+    "شمال الباطنة": ["صحار","شناص","لوى","صحم","الخابورة","السويق"],
+    "جنوب الباطنة": ["الرستاق","العوابي","نخل","وادي المعاول","بركاء","المصنعة"],
+    "جنوب الشرقية": ["صور","الكامل والوافي","جعلان بني بو علي","جعلان بني بو حسن","مصيرة"],
+    "شمال الشرقية": ["إبراء","المضيبي","بدية","القابل","وادي بني خالد","دماء والطائيين"],
+    "الظاهرة": ["عبري","ينقل","ضنك"],
+    "الوسطى": ["هيماء","الدقم","محوت","الجازر"],
+  };
+
+  const governorateSelect = document.getElementById('governorate');
+  const wilayatSelect = document.getElementById('wilayat');
+
+  Object.keys(OMAN_REGIONS).forEach(gov => {
+    const opt = document.createElement('option');
+    opt.value = gov;
+    opt.textContent = gov;
+    governorateSelect.appendChild(opt);
+  });
+
+  governorateSelect.addEventListener('change', function(){
+    const gov = this.value;
+    wilayatSelect.innerHTML = '';
+    if(!gov){
+      wilayatSelect.disabled = true;
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'اختر المحافظة أولاً';
+      wilayatSelect.appendChild(opt);
+      checkReady();
+      return;
+    }
+    wilayatSelect.disabled = false;
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'اختر الولاية';
+    wilayatSelect.appendChild(placeholder);
+    OMAN_REGIONS[gov].forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w;
+      opt.textContent = w;
+      wilayatSelect.appendChild(opt);
+    });
+    checkReady();
+  });
+  wilayatSelect.addEventListener('change', checkReady);
 
   /* ---------- Smooth scroll (no anchor navigation, avoids reload in embedded viewers) ---------- */
   document.querySelectorAll('[data-target]').forEach(el => {
@@ -620,22 +757,67 @@
     cartBody.innerHTML = items.map(p => {
       const subtotal = p.price * qty[p.id];
       total += subtotal;
-      return `<div class="cart-row"><span class="name">${p.name} × ${qty[p.id]}</span><span class="amt">${subtotal.toFixed(3)} ر.ع</span></div>`;
+      return `
+        <div class="cart-row item">
+          <div class="cart-item-info">
+            <span class="name">${p.name}</span>
+            <span class="amt">${subtotal.toFixed(3)} ر.ع</span>
+          </div>
+          <div class="cart-item-controls">
+            <div class="cart-stepper">
+              <button type="button" data-cart-action="minus" data-id="${p.id}" aria-label="تقليل">−</button>
+              <span>${qty[p.id]}</span>
+              <button type="button" data-cart-action="plus" data-id="${p.id}" aria-label="زيادة">+</button>
+            </div>
+            <button type="button" class="cart-remove" data-cart-action="remove" data-id="${p.id}" aria-label="إلغاء">✕</button>
+          </div>
+        </div>`;
     }).join('') + `<div class="cart-row"><span class="name">رسوم التوصيل</span><span class="amt">${DELIVERY_FEE.toFixed(3)} ر.ع</span></div>`;
     total += DELIVERY_FEE;
     totalVal.textContent = total.toFixed(3);
     checkReady();
   }
 
+  function setQty(id, newQty){
+    qty[id] = Math.max(0, Math.min(20, newQty));
+    const qtySpan = document.getElementById('qty-' + id);
+    if(qtySpan) qtySpan.textContent = qty[id];
+    renderCart();
+  }
+
+  document.getElementById('cartBody').addEventListener('click', function(e){
+    const btn = e.target.closest('button[data-cart-action]');
+    if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    const action = btn.getAttribute('data-cart-action');
+    if(action === 'plus') setQty(id, qty[id] + 1);
+    if(action === 'minus') setQty(id, qty[id] - 1);
+    if(action === 'remove') setQty(id, 0);
+  });
+
   productList.addEventListener('click', function(e){
+    const imgEl = e.target.closest('.prod-img img');
+    if(imgEl){
+      lightboxImg.src = imgEl.src;
+      lightboxImg.alt = imgEl.alt;
+      lightbox.classList.add('open');
+      return;
+    }
     const btn = e.target.closest('button');
     if(!btn) return;
     const id = btn.getAttribute('data-id');
     const action = btn.getAttribute('data-action');
-    if(action === 'plus' && qty[id] < 20) qty[id]++;
-    if(action === 'minus' && qty[id] > 0) qty[id]--;
-    document.getElementById('qty-' + id).textContent = qty[id];
-    renderCart();
+    if(action === 'plus') setQty(id, qty[id] + 1);
+    if(action === 'minus') setQty(id, qty[id] - 1);
+  });
+
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  const lightboxClose = document.getElementById('lightboxClose');
+  function closeLightbox(){ lightbox.classList.remove('open'); }
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function(e){
+    if(e.target === lightbox) closeLightbox();
   });
 
   /* Fix mobile viewport height issues in restrictive in-app browsers */
@@ -653,8 +835,10 @@
   function checkReady(){
     const nameOk = nameInput.value.trim().length >= 2;
     const phoneOk = phoneInput.value.replace(/\D/g,'').length >= 7;
+    const govOk = governorateSelect.value !== '';
+    const wilayatOk = wilayatSelect.value !== '';
     const hasItems = totalQty() > 0;
-    const ready = nameOk && phoneOk && hasItems;
+    const ready = nameOk && phoneOk && govOk && wilayatOk && hasItems;
     ctaBtn.classList.toggle('disabled', !ready);
     return ready;
   }
@@ -664,19 +848,27 @@
   ctaBtn.addEventListener('click', function(e){
     const nameField = document.getElementById('nameField');
     const phoneField = document.getElementById('phoneField');
+    const governorateField = document.getElementById('governorateField');
+    const wilayatField = document.getElementById('wilayatField');
 
     if(!checkReady()){
       e.preventDefault();
       if(nameInput.value.trim().length < 2) nameField.classList.add('error'); else nameField.classList.remove('error');
       if(phoneInput.value.replace(/\D/g,'').length < 7) phoneField.classList.add('error'); else phoneField.classList.remove('error');
+      if(governorateSelect.value === '') governorateField.classList.add('error'); else governorateField.classList.remove('error');
+      if(wilayatSelect.value === '') wilayatField.classList.add('error'); else wilayatField.classList.remove('error');
       return;
     }
 
     nameField.classList.remove('error');
     phoneField.classList.remove('error');
+    governorateField.classList.remove('error');
+    wilayatField.classList.remove('error');
 
     const name = nameInput.value.trim();
     const phone = phoneInput.value.trim();
+    const governorate = governorateSelect.value;
+    const wilayat = wilayatSelect.value;
     const items = PRODUCTS.filter(p => qty[p.id] > 0);
     let total = 0;
     const lines = items.map(p => {
@@ -691,6 +883,8 @@
       "مرحباً 👋، أرغب بالطلب من متجر رحيق 🍯\n" +
       "الاسم: " + name + "\n" +
       "رقم الهاتف: " + phone + "\n" +
+      "المحافظة: " + governorate + "\n" +
+      "الولاية: " + wilayat + "\n" +
       "--- تفاصيل الطلب ---\n" +
       lines.join("\n") + "\n" +
       "الإجمالي شامل التوصيل: " + total.toFixed(3) + " ر.ع\n" +
