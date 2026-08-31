@@ -610,13 +610,12 @@
   const WHATSAPP_NUMBER = "96898251593";
   const DELIVERY_FEE = 2.000;
 
-  // Safe no-op unless GoatCounter (see bottom of page) is enabled.
+  // Safe no-op unless GoatCounter (loaded at the bottom of this page) is ready.
   function trackEvent(path){
     if(window.goatcounter && window.goatcounter.count){
       window.goatcounter.count({ path: path, event: true });
     }
   }
-  trackEvent('/visit');
   let cartEventFired = false;
 
   // Share the single embedded logo image across navbar, hero, and footer
@@ -956,12 +955,12 @@
   renderCart();
 </script>
 <!--
-  Analytics (optional, free): sign up at https://www.goatcounter.com (30 seconds, no credit card),
-  then replace YOURCODE below with your GoatCounter site code to get a real dashboard showing
-  visits, and (via the custom events already wired into this page) how many people added items
-  to their cart vs. how many actually completed checkout.
-  Until you do this, the page works exactly the same — trackEvent() below just does nothing.
+  Analytics: powered by GoatCounter (https://raheeq.goatcounter.com).
+  Automatic pageviews show total visits. Two custom events are tracked from the JS above:
+  "/added-to-cart" (first time someone adds a product) and "/order-completed" (checkout button clicked).
+  Compare visits vs. added-to-cart vs. order-completed in your dashboard to see the full funnel,
+  including how many people left without ordering.
 -->
-<!-- <script data-goatcounter="https://YOURCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script> -->
+<script data-goatcounter="https://raheeq.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
