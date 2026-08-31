@@ -121,7 +121,8 @@
         <button class="btn secondary" id="loadStatsBtn">تحميل الإحصائيات</button>
         <p class="note">
           احصل على هذا الرمز من <strong>raheeq.goatcounter.com → Settings → API</strong> — أنشئ رمزًا جديدًا بصلاحية
-          <strong>Read statistics</strong> فقط. يُستخدم هذا الرمز داخل متصفحك فقط ولا يُخزَّن في أي مكان آخر.
+          <strong>Read statistics</strong> فقط. يُحفظ هذا الرمز في متصفحك فقط (هذا الجهاز) حتى لا تحتاج لإدخاله كل مرة،
+          وهو رمز قراءة فقط لا يمكنه تغيير أي شيء. <a href="#" id="forgetGcToken" style="color:var(--red);">نسيان الرمز المحفوظ</a>
         </p>
       </div>
       <div id="statsResults" style="display:none;">
@@ -167,6 +168,8 @@
 
   function formatDate(d){ return d.toISOString().slice(0,10); }
 
+  const GC_TOKEN_KEY = 'raheeq_admin_gc_token';
+
   async function loadStats(){
     const token = document.getElementById('gcToken').value.trim();
     if(!token){ alert('فضلاً الصق رمز GoatCounter API أولاً'); return; }
@@ -204,6 +207,10 @@
 
       document.getElementById('statsLogin').style.display = 'none';
       document.getElementById('statsResults').style.display = 'block';
+
+      // Remember the token locally on this device only (it's read-only — can't change
+      // anything — so saving it here just spares you from re-pasting it every visit).
+      localStorage.setItem(GC_TOKEN_KEY, token);
     }catch(err){
       alert((err.message || 'حدث خطأ غير متوقع') + '\n\nيمكنك دائمًا فتح لوحة GoatCounter الكاملة من الرابط أدناه.');
     }
@@ -215,6 +222,21 @@
     e.preventDefault();
     loadStats();
   });
+  document.getElementById('forgetGcToken').addEventListener('click', function(e){
+    e.preventDefault();
+    localStorage.removeItem(GC_TOKEN_KEY);
+    document.getElementById('gcToken').value = '';
+    alert('تم نسيان الرمز. سيُطلب منك إدخاله مجددًا في المرة القادمة.');
+  });
+
+  // Auto-fill and auto-load if we already have a saved token from a previous visit.
+  (function(){
+    const saved = localStorage.getItem(GC_TOKEN_KEY);
+    if(saved){
+      document.getElementById('gcToken').value = saved;
+      loadStats();
+    }
+  })();
 
   let TOKEN = '';
   let OWNER = '';
