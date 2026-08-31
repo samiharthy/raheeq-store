@@ -298,13 +298,46 @@
     if(e.target.classList.contains('f-image')){
       const file = e.target.files[0];
       if(!file) return;
-      const index = Number(e.target.closest('.product-item').getAttribute('data-index'));
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        products[index].image = ev.target.result;
+      const item = e.target.closest('.product-item');
+      const index = Number(item.getAttribute('data-index'));
+      const label = e.target.closest('.file-btn');
+      const originalLabelText = label.firstChild.textContent;
+      label.firstChild.textContent = '⏳ جاري معالجة الصورة...';
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = function(){
+        // Resize/compress client-side so products.json stays small and saves reliably,
+        // even when the photo comes straight from a phone camera (several MB).
+        const MAX_DIM = 700;
+        let { width, height } = img;
+        if(width > height && width > MAX_DIM){
+          height = Math.round(height * (MAX_DIM / width));
+          width = MAX_DIM;
+        } else if(height > MAX_DIM){
+          width = Math.round(width * (MAX_DIM / height));
+          height = MAX_DIM;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        URL.revokeObjectURL(objectUrl);
+
+        // Capture any unsaved edits in other fields before we rebuild the whole list,
+        // otherwise re-rendering would silently discard them.
+        syncFromInputs();
+        products[index].image = dataUrl;
         renderProducts();
       };
-      reader.readAsDataURL(file);
+      img.onerror = function(){
+        URL.revokeObjectURL(objectUrl);
+        alert('تعذّر قراءة هذه الصورة. جرّب صورة أخرى (jpg أو png).');
+        label.firstChild.textContent = originalLabelText;
+      };
+      img.src = objectUrl;
     }
   });
 
