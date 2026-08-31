@@ -229,9 +229,15 @@
     alert('تم نسيان الرمز. سيُطلب منك إدخاله مجددًا في المرة القادمة.');
   });
 
-  // Auto-fill and auto-load if we already have a saved token from a previous visit.
+  // Default token baked into the page so stats load automatically with no manual entry.
+  // Note: since this repo is public, anyone viewing the page source could see this token —
+  // it only has read-only "view stats" access though, so it can't change or delete anything.
+  const DEFAULT_GC_TOKEN = 'z9rpmmoq910m20ibkqhke8hr91ai64b44m4yz63gjg8kpkuenf';
+
+  // Auto-fill and auto-load: prefer a token saved locally from a previous visit,
+  // otherwise fall back to the default token above.
   (function(){
-    const saved = localStorage.getItem(GC_TOKEN_KEY);
+    const saved = localStorage.getItem(GC_TOKEN_KEY) || DEFAULT_GC_TOKEN;
     if(saved){
       document.getElementById('gcToken').value = saved;
       loadStats();
