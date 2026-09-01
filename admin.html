@@ -200,8 +200,17 @@
     }
     return [];
   }
+  const SIZE_LABELS = {
+    phone: '📱 هاتف',
+    tablet: '📟 جهاز لوحي',
+    desktop: '💻 كمبيوتر',
+    unknown: 'غير معروف',
+  };
+
   function extractLabel(row){
-    return row.name || row.browser || row.system || row.location || row.ref || row.size || row.label || 'غير معروف';
+    const raw = row.name || row.browser || row.system || row.location || row.ref || row.size || row.label || row.id || '';
+    if(raw && SIZE_LABELS[raw]) return SIZE_LABELS[raw];
+    return raw || 'غير معروف';
   }
   function extractCount(row){
     return row.count ?? row.count_unique ?? 0;
@@ -237,8 +246,8 @@
   async function fetchBreakdown(token, endpoint, start, end, isRetry){
     try{
       const res = await fetch(
-        `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20`,
-        { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
+        `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20&_=${Date.now()}`,
+        { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
       );
       if(res.status === 429 && !isRetry){
         await sleep(1500);
@@ -267,8 +276,8 @@
 
     try{
       const res = await fetch(
-        `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100`,
-        { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
+        `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100&_=${Date.now()}`,
+        { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
       );
       if(!res.ok) throw new Error('تعذّر الاتصال بـ GoatCounter. تحقق من صحة الرمز وصلاحياته.');
       const data = await res.json();
