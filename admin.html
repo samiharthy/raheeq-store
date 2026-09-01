@@ -275,11 +275,24 @@
     start.setDate(start.getDate() - 30);
 
     try{
-      const res = await fetch(
+      let res = await fetch(
         `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100&_=${Date.now()}`,
         { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
       );
-      if(!res.ok) throw new Error('تعذّر الاتصال بـ GoatCounter. تحقق من صحة الرمز وصلاحياته.');
+      // GoatCounter briefly rate-limits (429) if requests come in quick succession —
+      // wait a moment and try once more before treating it as a real failure.
+      if(res.status === 429){
+        await sleep(2000);
+        res = await fetch(
+          `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100&_=${Date.now()}`,
+          { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
+        );
+      }
+      if(!res.ok){
+        if(res.status === 429) throw new Error('تجاوزت حد عدد الطلبات المسموح به مؤقتًا من GoatCounter. انتظر دقيقة واحدة ثم اضغط "تحديث" مرة أخرى.');
+        if(res.status === 401 || res.status === 403) throw new Error('الرمز غير صحيح أو لا يملك صلاحية "Read statistics". تحقق منه في GoatCounter → Settings → API.');
+        throw new Error('تعذّر الاتصال بـ GoatCounter (رمز الخطأ: ' + res.status + ').');
+      }
       const data = await res.json();
       const rows = data.hits || [];
 
