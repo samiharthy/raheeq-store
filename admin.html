@@ -246,7 +246,7 @@
   async function fetchBreakdown(token, endpoint, start, end, isRetry){
     try{
       const res = await fetch(
-        `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20&_=${Date.now()}`,
+        `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20`,
         { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
       );
       if(res.status === 429 && !isRetry){
@@ -276,7 +276,7 @@
 
     try{
       let res = await fetch(
-        `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100&_=${Date.now()}`,
+        `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100`,
         { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
       );
       // GoatCounter briefly rate-limits (429) if requests come in quick succession —
@@ -284,7 +284,7 @@
       if(res.status === 429){
         await sleep(2000);
         res = await fetch(
-          `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100&_=${Date.now()}`,
+          `https://${GC_SITE}/api/v0/stats/hits?start=${formatDate(start)}&end=${formatDate(end)}&limit=100`,
           { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }, cache: 'no-store' }
         );
       }
