@@ -203,8 +203,12 @@
     return row.count ?? row.count_unique ?? 0;
   }
 
-  function renderBars(containerId, rows){
+  function renderBars(containerId, rows, failed){
     const el = document.getElementById(containerId);
+    if(failed){
+      el.innerHTML = '<div class="bar-empty">⚠️ تعذّر تحميل هذا القسم (حد الطلبات) — سيُعاد المحاولة تلقائيًا</div>';
+      return;
+    }
     if(!rows || rows.length === 0){
       el.innerHTML = '<div class="bar-empty">لا توجد بيانات كافية بعد</div>';
       return;
@@ -222,17 +226,25 @@
     `).join('');
   }
 
-  async function fetchBreakdown(token, endpoint, start, end){
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  // Fetch one breakdown endpoint. Retries once after a short pause if we hit
+  // GoatCounter's rate limit (429), which happens if requests fire too close together.
+  async function fetchBreakdown(token, endpoint, start, end, isRetry){
     try{
       const res = await fetch(
         `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20`,
         { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
       );
-      if(!res.ok) return [];
+      if(res.status === 429 && !isRetry){
+        await sleep(1500);
+        return fetchBreakdown(token, endpoint, start, end, true);
+      }
+      if(!res.ok) return { rows: [], failed: true };
       const data = await res.json();
-      return extractRows(data);
+      return { rows: extractRows(data), failed: false };
     }catch(e){
-      return [];
+      return { rows: [], failed: true };
     }
   }
 
@@ -275,18 +287,24 @@
 
       // Fetch the richer breakdowns in parallel; each degrades gracefully on its own
       // if that particular endpoint/shape doesn't match, without breaking the rest.
-      const [refs, locations, sizes, browsers, systems] = await Promise.all([
-        fetchBreakdown(token, 'refs', start, end),
-        fetchBreakdown(token, 'locations', start, end),
-        fetchBreakdown(token, 'sizes', start, end),
-        fetchBreakdown(token, 'browsers', start, end),
-        fetchBreakdown(token, 'systems', start, end),
-      ]);
-      renderBars('barsRefs', refs);
-      renderBars('barsLocations', locations);
-      renderBars('barsSizes', sizes);
-      renderBars('barsBrowsers', browsers);
-      renderBars('barsSystems', systems);
+      // Fetch the richer breakdowns one at a time (not all at once) — firing 5 requests
+      // simultaneously right after the main stats call reliably triggers GoatCounter's
+      // rate limit, which is what was causing every section to show empty/zero before.
+      const refs = await fetchBreakdown(token, 'toprefs', start, end);
+      await sleep(350);
+      const locations = await fetchBreakdown(token, 'locations', start, end);
+      await sleep(350);
+      const sizes = await fetchBreakdown(token, 'sizes', start, end);
+      await sleep(350);
+      const browsers = await fetchBreakdown(token, 'browsers', start, end);
+      await sleep(350);
+      const systems = await fetchBreakdown(token, 'systems', start, end);
+
+      renderBars('barsRefs', refs.rows, refs.failed);
+      renderBars('barsLocations', locations.rows, locations.failed);
+      renderBars('barsSizes', sizes.rows, sizes.failed);
+      renderBars('barsBrowsers', browsers.rows, browsers.failed);
+      renderBars('barsSystems', systems.rows, systems.failed);
 
       document.getElementById('statsLogin').style.display = 'none';
       document.getElementById('statsResults').style.display = 'block';
