@@ -81,6 +81,15 @@
   .stat-num{font-size:24px;font-weight:800;color:var(--gold-bright);margin-bottom:4px;}
   .stat-box.red .stat-num{color:var(--red);}
   .stat-label{font-size:12px;color:var(--cream-dim);}
+  .bar-section{margin-top:20px;}
+  .bar-section h3{font-family:'Amiri',serif;color:var(--gold-bright);font-size:15px;margin:0 0 10px;}
+  .bar-list{display:flex;flex-direction:column;gap:8px;}
+  .bar-row{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+  .bar-row .bar-label{width:110px;flex-shrink:0;color:var(--cream-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bar-row .bar-track{flex:1;background:#0c0a08;border-radius:6px;height:16px;overflow:hidden;border:1px solid var(--line);}
+  .bar-row .bar-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));}
+  .bar-row .bar-count{width:34px;text-align:left;flex-shrink:0;color:var(--cream);font-weight:700;}
+  .bar-empty{font-size:12px;color:#6b6255;text-align:center;padding:6px 0;}
 </style>
 </head>
 <body>
@@ -118,13 +127,13 @@
       <div id="statsLogin">
         <label for="gcToken">GoatCounter API Token</label>
         <input type="password" id="gcToken" placeholder="الصق الرمز هنا">
-        <button class="btn secondary" id="loadStatsBtn">تحميل الإحصائيات</button>
         <p class="note">
           احصل على هذا الرمز من <strong>raheeq.goatcounter.com → Settings → API</strong> — أنشئ رمزًا جديدًا بصلاحية
           <strong>Read statistics</strong> فقط. يُحفظ هذا الرمز في متصفحك فقط (هذا الجهاز) حتى لا تحتاج لإدخاله كل مرة،
           وهو رمز قراءة فقط لا يمكنه تغيير أي شيء. <a href="#" id="forgetGcToken" style="color:var(--red);">نسيان الرمز المحفوظ</a>
         </p>
       </div>
+
       <div id="statsResults" style="display:none;">
         <div class="stats-grid">
           <div class="stat-box">
@@ -144,8 +153,17 @@
             <div class="stat-label">لم يكملوا الطلب</div>
           </div>
         </div>
-        <p class="note" style="text-align:center;">آخر 30 يومًا · <a href="#" id="refreshStats" style="color:var(--gold-bright);">تحديث</a></p>
+
+        <div class="bar-section"><h3>🔗 مصادر الزيارات</h3><div id="barsRefs" class="bar-list"></div></div>
+        <div class="bar-section"><h3>🌍 الدول</h3><div id="barsLocations" class="bar-list"></div></div>
+        <div class="bar-section"><h3>📱 الأجهزة</h3><div id="barsSizes" class="bar-list"></div></div>
+        <div class="bar-section"><h3>🧭 المتصفحات</h3><div id="barsBrowsers" class="bar-list"></div></div>
+        <div class="bar-section"><h3>💻 أنظمة التشغيل</h3><div id="barsSystems" class="bar-list"></div></div>
+
+        <p class="note" style="text-align:center;" id="lastUpdated">آخر 30 يومًا</p>
       </div>
+
+      <button class="btn secondary" id="loadStatsBtn" style="margin-top:12px;">🔄 تحديث الإحصائيات الآن</button>
       <p class="note" style="text-align:center;">
         <a href="https://raheeq.goatcounter.com" target="_blank" style="color:var(--gold-bright);">فتح لوحة GoatCounter الكاملة ↗</a>
       </p>
@@ -170,12 +188,62 @@
 
   const GC_TOKEN_KEY = 'raheeq_admin_gc_token';
 
+  // Generic helper: pull whichever array is in the API response, and read common
+  // label/count field names, since GoatCounter's endpoints don't all use identical keys.
+  function extractRows(json){
+    for(const key in json){
+      if(Array.isArray(json[key])) return json[key];
+    }
+    return [];
+  }
+  function extractLabel(row){
+    return row.name || row.browser || row.system || row.location || row.ref || row.size || row.label || 'غير معروف';
+  }
+  function extractCount(row){
+    return row.count ?? row.count_unique ?? 0;
+  }
+
+  function renderBars(containerId, rows){
+    const el = document.getElementById(containerId);
+    if(!rows || rows.length === 0){
+      el.innerHTML = '<div class="bar-empty">لا توجد بيانات كافية بعد</div>';
+      return;
+    }
+    const sorted = rows.map(r => ({ label: extractLabel(r), count: extractCount(r) }))
+                        .sort((a,b) => b.count - a.count)
+                        .slice(0, 6);
+    const max = Math.max(...sorted.map(r => r.count), 1);
+    el.innerHTML = sorted.map(r => `
+      <div class="bar-row">
+        <span class="bar-label">${r.label}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((r.count/max)*100)}%"></span></span>
+        <span class="bar-count">${r.count}</span>
+      </div>
+    `).join('');
+  }
+
+  async function fetchBreakdown(token, endpoint, start, end){
+    try{
+      const res = await fetch(
+        `https://${GC_SITE}/api/v0/stats/${endpoint}?start=${formatDate(start)}&end=${formatDate(end)}&limit=20`,
+        { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } }
+      );
+      if(!res.ok) return [];
+      const data = await res.json();
+      return extractRows(data);
+    }catch(e){
+      return [];
+    }
+  }
+
+  let autoRefreshTimer = null;
+
   async function loadStats(){
     const token = document.getElementById('gcToken').value.trim();
     if(!token){ alert('فضلاً الصق رمز GoatCounter API أولاً'); return; }
 
     const btn = document.getElementById('loadStatsBtn');
-    btn.textContent = 'جاري التحميل...';
+    btn.textContent = '⏳ جاري التحديث...';
 
     const end = new Date();
     const start = new Date();
@@ -205,23 +273,41 @@
       document.getElementById('statOrders').textContent = orders;
       document.getElementById('statAbandoned').textContent = Math.max(0, visits - orders);
 
+      // Fetch the richer breakdowns in parallel; each degrades gracefully on its own
+      // if that particular endpoint/shape doesn't match, without breaking the rest.
+      const [refs, locations, sizes, browsers, systems] = await Promise.all([
+        fetchBreakdown(token, 'refs', start, end),
+        fetchBreakdown(token, 'locations', start, end),
+        fetchBreakdown(token, 'sizes', start, end),
+        fetchBreakdown(token, 'browsers', start, end),
+        fetchBreakdown(token, 'systems', start, end),
+      ]);
+      renderBars('barsRefs', refs);
+      renderBars('barsLocations', locations);
+      renderBars('barsSizes', sizes);
+      renderBars('barsBrowsers', browsers);
+      renderBars('barsSystems', systems);
+
       document.getElementById('statsLogin').style.display = 'none';
       document.getElementById('statsResults').style.display = 'block';
+      document.getElementById('lastUpdated').textContent =
+        'آخر 30 يومًا · آخر تحديث: ' + new Date().toLocaleTimeString('ar');
 
       // Remember the token locally on this device only (it's read-only — can't change
       // anything — so saving it here just spares you from re-pasting it every visit).
       localStorage.setItem(GC_TOKEN_KEY, token);
+
+      // Keep this feeling "live" without needing a manual click every time.
+      if(!autoRefreshTimer){
+        autoRefreshTimer = setInterval(loadStats, 60000);
+      }
     }catch(err){
       alert((err.message || 'حدث خطأ غير متوقع') + '\n\nيمكنك دائمًا فتح لوحة GoatCounter الكاملة من الرابط أدناه.');
     }
-    btn.textContent = 'تحميل الإحصائيات';
+    btn.textContent = '🔄 تحديث الإحصائيات الآن';
   }
 
   document.getElementById('loadStatsBtn').addEventListener('click', loadStats);
-  document.getElementById('refreshStats').addEventListener('click', function(e){
-    e.preventDefault();
-    loadStats();
-  });
   document.getElementById('forgetGcToken').addEventListener('click', function(e){
     e.preventDefault();
     localStorage.removeItem(GC_TOKEN_KEY);
